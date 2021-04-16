@@ -1,0 +1,102 @@
+<html>
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript">google.charts.load('current', {'packages':['corechart']});</script>
+</head>
+<body>
+  <div class = "row" style="margin: 0 auto;">
+    <div class = "col-*-*">
+      <div class = "row" style="margin: 30 auto;">
+        <div class = "col-*-*">
+          <h1>Insert the province</h1><br/>
+          <input list="provinces" id="userChoice">
+          <datalist id="provinces"></datalist>
+          <button onclick="faiTutto()">Show</button>
+        </div>
+      </div>
+      <div class ="row">
+        <div class = "col" id = "output"></div>
+      </div>
+    </div>
+    <div class = "col-*-*" id="curve_chart" style="width: 900px; height: 500px; margin: 50 auto;"></div>
+  </div>
+
+<script>
+  var formatedData = [];
+  var dataOfTheCity = [];
+
+  $(document).ready(function(){
+       $.get('https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-province/dpc-covid19-ita-province.csv',carica)
+  });
+
+  function dividiInBaseA(cosa, segno){
+    return cosa.split(segno);
+  }
+  function carica(database){
+    var inputElements = [];
+    database = dividiInBaseA(database, "\n");
+    database.forEach((item) => {formatedData.push(dividiInBaseA(item, ","));});
+
+    formatedData.forEach(function(element){
+      if(!(element[5] === undefined))
+        if(!(inputElements.includes(element[5]))) {
+          if(!(element[5].includes("_") || element[5].includes("In fase di definizione/aggiornamento")))
+            inputElements.push(element[5]);
+        }
+    });
+    inputElements.pop();
+    inputElements.sort();
+    var options = "";
+    inputElements.forEach((item) => { options += "<option value=\"" + item + "\">"});
+    document.getElementById("provinces").innerHTML = options;
+  }
+  function search(cityName){
+    function formatDate(date){
+      return date.slice(0,10);
+    }
+    dataOfTheCity = [];
+    formatedData.forEach(function(element) {
+      if(element[5] == cityName)
+        dataOfTheCity.push(createArray(formatDate(element[0]),parseInt(element[9], 10)));
+      });
+
+
+  }
+  function createArray(date,cases){
+    var arr = [];
+    arr.push(date, cases);
+    return arr;
+  }
+  function drawChart() {
+    dataOfTheCity.unshift(['Date', 'Cases']);
+    var data = google.visualization.arrayToDataTable(dataOfTheCity);
+
+    var options = {
+      title: 'Corona cases',
+      curveType: 'function',
+      legend: { position: 'bottom' }
+    };
+
+    var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+    chart.draw(data, options);
+  }
+  function showNumbers(data){
+    document.getElementById("output").innerHTML = "";
+    var i;
+    for(i = dataOfTheCity.length-1;i>=0;i--)
+      document.getElementById("output").innerHTML += dataOfTheCity[i] + "<br/>";
+    }
+  function faiTutto(){
+    var choice = document.getElementById('userChoice').value;
+    search(choice);
+    showNumbers();
+    drawChart();
+  }
+  </script>
+</body>
+</html>
